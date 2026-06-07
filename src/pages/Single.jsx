@@ -1,37 +1,87 @@
-// Import necessary hooks and components from react-router-dom and other libraries.
-import { Link, useParams } from "react-router-dom";  // To use link for navigation and useParams to get URL parameters
-import PropTypes from "prop-types";  // To define prop types for this component
-import rigoImageUrl from "../assets/img/rigo-baby.jpg"  // Import an image asset
-import useGlobalReducer from "../hooks/useGlobalReducer";  // Import a custom hook for accessing the global state
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
 
-// Define and export the Single component which displays individual item details.
-export const Single = props => {
-  // Access the global state using the custom hook.
-  const { store } = useGlobalReducer()
+export const Single = () => {
+  const { type, id } = useParams();
 
-  // Retrieve the 'theId' URL parameter using useParams hook.
-  const { theId } = useParams()
-  const singleTodo = store.todos.find(todo => todo.id === parseInt(theId));
+  const [item, setItem] = useState(null);
+  const [description, setDescription] = useState("");
+
+  const getDetails = async () => {
+    const response = await fetch(`https://www.swapi.tech/api/${type}/${id}`);
+    const data = await response.json();
+
+    setItem(data.result.properties);
+    setDescription(data.result.description);
+  };
+
+  useEffect(() => {
+    getDetails();
+  }, [type, id]);
+
+  if (!item) {
+    return <h2 className="text-center mt-5">Loading...</h2>;
+  }
+
+  const detailsByType = {
+    people: [
+      ["Name", item.name],
+      ["Birth Year", item.birth_year],
+      ["Gender", item.gender],
+      ["Height", item.height],
+      ["Skin Color", item.skin_color],
+      ["Eye Color", item.eye_color],
+    ],
+
+    planets: [
+      ["Name", item.name],
+      ["Climate", item.climate],
+      ["Population", item.population],
+      ["Terrain", item.terrain],
+      ["Gravity", item.gravity],
+      ["Diameter", item.diameter],
+    ],
+
+    vehicles: [
+      ["Name", item.name],
+      ["Model", item.model],
+      ["Manufacturer", item.manufacturer],
+      ["Cost", item.cost_in_credits],
+      ["Passengers", item.passengers],
+      ["Class", item.vehicle_class],
+    ],
+  };
+
+  const detailsToShow = detailsByType[type] || [];
 
   return (
-    <div className="container text-center">
-      {/* Display the title of the todo element dynamically retrieved from the store using theId. */}
-      <h1 className="display-4">Todo: {singleTodo?.title}</h1>
-      <hr className="my-4" />  {/* A horizontal rule for visual separation. */}
+    <div className="container my-5">
+      <div className="row align-items-center mb-5">
+        <div className="col-md-6">
+          <img
+            src="https://placehold.co/600x400?text=Star+Wars"
+            className="img-fluid"
+            alt={item.name}
+            style={{ height: "350px", width: "100%", objectFit: "cover" }}
+          />
+        </div>
 
-      {/* A Link component acts as an anchor tag but is used for client-side routing to prevent page reloads. */}
-      <Link to="/">
-        <span className="btn btn-primary btn-lg" href="#" role="button">
-          Back home
-        </span>
-      </Link>
+        <div className="col-md-6 text-center">
+          <h1>{item.name}</h1>
+          <p>{description}</p>
+        </div>
+      </div>
+
+      <hr className="border border-danger" />
+
+      <div className="row text-danger text-center">
+        {detailsToShow.map(([label, value]) => (
+          <div className="col" key={label}>
+            <h6>{label}</h6>
+            <p>{value || "n/a"}</p>
+          </div>
+        ))}
+      </div>
     </div>
   );
-};
-
-// Use PropTypes to validate the props passed to this component, ensuring reliable behavior.
-Single.propTypes = {
-  // Although 'match' prop is defined here, it is not used in the component.
-  // Consider removing or using it as needed.
-  match: PropTypes.object
 };
